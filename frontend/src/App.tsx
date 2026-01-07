@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import { sha256 } from './service/hashfunction';
 
 // คำตอบที่ถูกต้อง
 const CORRECT_USERNAME = 'SUT_Student_2026';
@@ -20,7 +21,7 @@ function App() {
     if (stage === 'stage3') {
       const role = getCookie('role') || 'passenger';
       setUserRole(role);
-      
+
       // ถ้ายังไม่มี Cookie ให้สร้าง
       if (!getCookie('role')) {
         setCookie('role', 'passenger', 1);
@@ -52,14 +53,18 @@ function App() {
     }
   };
 
-  // ด่านที่ 2: ตรวจสอบ PIN
-  const handleStage2Submit = (e: React.FormEvent) => {
+  const handleStage2Submit = async (e: React.FormEvent) => { // อย่าลืม async
     e.preventDefault();
-    if (pinInput === CORRECT_PIN) {
+
+    // Hash ของ '3600'
+    const correctHash = await sha256('3600');;
+    const inputHash = await sha256(pinInput);
+
+    if (inputHash === correctHash) {
       setError('');
       setStage('stage3');
     } else {
-      setError('❌ PIN ไม่ถูกต้อง! ลองค้นหาข้อมูลอีกครั้ง');
+      setError('❌ PIN ไม่ถูกต้อง! (Hash ไม่ตรงกัน)');
     }
   };
 
@@ -98,7 +103,7 @@ function App() {
             <span className="stage-badge">ด่านที่ 1</span>
             <h2>🔐 Cryptography</h2>
           </div>
-          
+
           <div className="info-box">
             <p>ระบบถูกล็อก! คุณต้องหา <strong>Username</strong> เพื่อเข้าสู่ระบบ</p>
           </div>
@@ -196,7 +201,7 @@ function App() {
               </div>
             </div>
 
-            <button 
+            <button
               className={`start-bus-btn ${userRole === 'driver' ? 'enabled' : 'disabled'}`}
               onClick={handleStartBus}
             >
