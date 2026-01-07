@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { sha256 } from './service/hashfunction';
+// สมมติว่าไฟล์ hashfunction อยู่ที่เดิม
+// import { sha256 } from './service/hashfunction';
 
-// คำตอบที่ถูกต้อง
+// Mock function กรณีไม่มีไฟล์ service
+const sha256 = async (text: string) => {
+  const msgUint8 = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 const CORRECT_USERNAME = 'SUT_Student_2026';
-const CORRECT_PIN = '3600'; // 4 หลักท้ายของเบอร์โทร รพ. มทส. (044-223-600)
 const FLAG = 'FLAG{SUT_Smart_Bus_System_Restored_2026}';
 
 type GameStage = 'intro' | 'stage1' | 'stage2' | 'stage3' | 'victory';
@@ -16,81 +23,80 @@ function App() {
   const [error, setError] = useState('');
   const [userRole, setUserRole] = useState('passenger');
 
-  // ตรวจสอบ Cookie เมื่อเข้าด่าน 3
-  useEffect(() => {
-    if (stage === 'stage3') {
-      const role = getCookie('role') || 'passenger';
-      setUserRole(role);
-
-      // ถ้ายังไม่มี Cookie ให้สร้าง
-      if (!getCookie('role')) {
-        setCookie('role', 'passenger', 1);
-      }
-    }
-  }, [stage]);
-
-  // ฟังก์ชันจัดการ Cookie
+  // --- Cookie Helpers ---
   const setCookie = (name: string, value: string, days: number) => {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
-    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
   };
 
   const getCookie = (name: string) => {
-    return document.cookie.split('; ').reduce((r, v) => {
-      const parts = v.split('=');
-      return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-    }, '');
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(';').shift() || '');
+    return '';
   };
 
-  // ด่านที่ 1: ตรวจสอบ Username
+  const resetGame = () => {
+    setCookie('role', 'passenger', 1);
+    setUserRole('passenger');
+    setStage('intro');
+    setUsernameInput('');
+    setPinInput('');
+    setError('');
+  };
+
+  useEffect(() => {
+    let interval: any;
+    if (stage === 'stage3') {
+      const current = getCookie('role') || 'passenger';
+      setUserRole(current);
+
+      interval = setInterval(() => {
+        const liveCookie = getCookie('role');
+        if (liveCookie && liveCookie !== userRole) setUserRole(liveCookie);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [stage, userRole]);
+
   const handleStage1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (usernameInput === CORRECT_USERNAME) {
       setError('');
       setStage('stage2');
     } else {
-      setError('❌ Username ไม่ถูกต้อง! ลองถอดรหัสอีกครั้ง');
+      setError('❌ Username ไม่ถูกต้อง! ลองถอดรหัส Base64 อีกครั้ง');
     }
   };
 
-  const handleStage2Submit = async (e: React.FormEvent) => { // อย่าลืม async
+  const handleStage2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Hash ของ '3600'
-    const correctHash = await sha256('3600');;
+    const PIN_HASH = await sha256('3600');
     const inputHash = await sha256(pinInput);
-
-    if (inputHash === correctHash) {
+    if (inputHash === PIN_HASH) {
       setError('');
       setStage('stage3');
     } else {
-      setError('❌ PIN ไม่ถูกต้อง! (Hash ไม่ตรงกัน)');
-    }
-  };
-
-  // ด่านที่ 3: กดปุ่ม Start Bus
-  const handleStartBus = () => {
-    const currentRole = getCookie('role') || 'passenger';
-    if (currentRole === 'driver') {
-      setStage('victory');
-    } else {
-      setError('🚫 Access Denied. You are "Passenger", only "Driver" can start the bus.');
+      setError('❌ PIN ไม่ถูกต้อง! (เบาะแส: 044-223-3xxx)');
     }
   };
 
   return (
-    <div className="App">
-      {/* Intro Screen */}
+    <div className="min-h-screen bg-linear-to-br from-[#667eea] to-[#764ba2] flex flex-col items-center justify-center p-5 relative font-sans">
+
+      {/* Stage: INTRO */}
       {stage === 'intro' && (
-        <div className="screen intro-screen">
-          <div className="bus-icon">🚌</div>
-          <h1 className="game-title">The SUT Smart Bus Hack</h1>
-          <div className="story-box">
-            <p>⚠️ ระบบเดินรถเมล์มอถูกล็อก!</p>
-            <p>ผู้เล่นต้องสวมบทเป็นแฮกเกอร์เพื่อกู้คืนระบบเดินรถ</p>
-            <p>ให้เพื่อนๆ ได้ไปเรียนทันเวลา</p>
+        <div className="bg-white rounded-[20px] p-10 max-w-[700px] w-full shadow-[0_20px_60px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-8 duration-500 text-center">
+          <div className="text-[80px] animate-bounce-slow">🚌</div>
+          <h1 className="text-4xl md:text-5xl font-bold text-[#667eea] my-5">The SUT Smart Bus Hack</h1>
+          <div className="bg-linear-to-br from-[#ffeaa7] to-[#fdcb6e] p-6 rounded-2xl my-8 border-l-5 border-[#e17055] text-left">
+            <p className="text-lg text-[#2d3436] leading-relaxed mb-2">⚠️ ระบบเดินรถเมล์มอถูกล็อก!</p>
+            <p className="text-lg text-[#2d3436] leading-relaxed">ภารกิจ: กู้คืนระบบให้เพื่อนๆ ไปเรียนทันเวลา</p>
           </div>
-          <button className="start-btn" onClick={() => setStage('stage1')}>
+          <button
+            className="bg-linear-to-br from-[#00b894] to-[#00cec9] text-white px-10 py-4 text-xl font-bold rounded-full cursor-pointer transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,184,148,0.6)] shadow-[0_5px_15px_rgba(0,184,148,0.4)]"
+            onClick={() => { setCookie('role', 'passenger', 1); setStage('stage1'); }}
+          >
             🔓 เริ่มภารกิจ
           </button>
         </div>
@@ -98,165 +104,117 @@ function App() {
 
       {/* Stage 1: Cryptography */}
       {stage === 'stage1' && (
-        <div className="screen stage-screen">
-          <div className="stage-header">
-            <span className="stage-badge">ด่านที่ 1</span>
-            <h2>🔐 Cryptography</h2>
+        <div className="bg-white rounded-[20px] p-10 max-w-[700px] w-full shadow-2xl animate-in fade-in duration-500">
+          <div className="text-center mb-8">
+            <span className="bg-linear-to-br from-[#fd79a8] to-[#e84393] text-white px-5 py-2 rounded-full text-sm font-bold inline-block mb-2">ด่านที่ 1</span>
+            <h2 className="text-3xl font-bold text-[#2d3436]">🔐 Cryptography</h2>
+            <div className='border border-amber-600 text-amber-600 bg-amber-200 rounded-2xl mt-5 h-18 flex justify-center items-center'>
+              <h3>นี่คือ Cyphertext ที่ได้ BJPNH โดยให้เอาภาพด้านล่างคือรหัสที่จะเอามาถอดเพื่อหา Plaintext</h3>
+            </div>
+            <img src="/image.png" alt="Logo" />
           </div>
-
-          <div className="info-box">
-            <p>ระบบถูกล็อก! คุณต้องหา <strong>Username</strong> เพื่อเข้าสู่ระบบ</p>
-          </div>
-
-          <div className="cipher-display">
-            <div className="marquee">
-              <span>U1VUX1N0dWRlbnRfMjAyNg==</span>
+          <div className="bg-[#2d3436] p-8 rounded-xl my-5 overflow-hidden relative">
+            <div className="flex overflow-hidden select-all">
+              <span className="text-[#00ff00] font-mono text-2xl font-bold whitespace-nowrap animate-scroll drop-shadow-[0_0_10px_#00ff00]">
+                U1VUX1N0dWRlbnRfMjAyNg==
+              </span>
             </div>
           </div>
-
-          <div className="hint-box">
-            <p>💡 <strong>คำใบ้:</strong> รหัสนี้คือชื่อผู้ใช้ (Username) ที่ถูกเข้ารหัสด้วยวิธีพื้นฐานที่นิยมใช้บนเว็บ (ลงท้ายด้วย ==)</p>
-          </div>
-
-          <form onSubmit={handleStage1Submit} className="input-form">
+          <form onSubmit={handleStage1Submit} className="flex flex-col md:flex-row gap-3 my-5">
             <input
               type="text"
-              placeholder="ใส่ Username ที่ถอดรหัสได้"
+              placeholder="Username"
+              className="flex-1 p-4 border-2 border-[#dfe6e9] rounded-xl text-lg focus:outline-none focus:border-[#667eea] transition-all"
               value={usernameInput}
               onChange={(e) => setUsernameInput(e.target.value)}
-              className="input-field"
             />
-            <button type="submit" className="submit-btn">ยืนยัน</button>
+            <button className="bg-linear-to-br from-[#667eea] to-[#764ba2] text-white px-8 py-4 rounded-xl font-bold hover:-translate-y-0.5 transition-all">ยืนยัน</button>
           </form>
-
-          {error && <div className="error-msg">{error}</div>}
+          {error && <div className="bg-[#ffebee] text-[#c62828] p-4 rounded-xl border-l-5 border-[#f44336] font-bold animate-shake">{error}</div>}
         </div>
       )}
 
       {/* Stage 2: Authentication */}
       {stage === 'stage2' && (
-        <div className="screen stage-screen">
-          <div className="stage-header">
-            <span className="stage-badge">ด่านที่ 2</span>
-            <h2>🔑 Authentication</h2>
+        <div className="bg-white rounded-[20px] p-10 max-w-[700px] w-full shadow-2xl animate-in fade-in duration-500">
+          <div className="text-center mb-8">
+            <span className="bg-linear-to-br from-[#fd79a8] to-[#e84393] text-white px-5 py-2 rounded-full text-sm font-bold inline-block mb-2">ด่านที่ 2</span>
+            <h2 className="text-3xl font-bold text-[#2d3436]">🔑 Authentication</h2>
           </div>
-
-          <div className="success-box">
-            <p>✅ Username ถูกต้อง! ยินดีต้อนรับ {CORRECT_USERNAME}</p>
+          <div className="bg-[#e3f2fd] border-l-5 border-[#2196f3] text-[#1565c0] p-5 rounded-xl my-5">
+            <p>ใส่รหัส PIN 4 หลัก (เลขท้ายเบอร์โทร รพ. มทส.)</p>
           </div>
-
-          <div className="info-box">
-            <p>ระบบต้องการ <strong>รหัสฉุกเฉิน (Emergency PIN)</strong> 4 หลัก</p>
-          </div>
-
-          <div className="hint-box">
-            <p>💡 <strong>คำใบ้:</strong> รหัสคือเลขท้าย 4 ตัว ของเบอร์โทรศัพท์ <strong>โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี</strong></p>
-            <p className="hint-sub">🔍 ลองค้นหาด้วย Google: "เบอร์โทร โรงพยาบาล มทส"</p>
-          </div>
-
-          <form onSubmit={handleStage2Submit} className="input-form">
+          <form onSubmit={handleStage2Submit} className="flex flex-col md:flex-row gap-3 my-5">
             <input
-              type="text"
-              placeholder="ใส่ PIN 4 หลัก"
+              type="password"
+              maxLength={4}
+              placeholder="PIN"
+              className="flex-1 p-4 border-2 border-[#dfe6e9] rounded-xl text-2xl text-center tracking-[10px] font-bold focus:outline-none focus:border-[#667eea]"
               value={pinInput}
               onChange={(e) => setPinInput(e.target.value)}
-              maxLength={4}
-              className="input-field pin-input"
             />
-            <button type="submit" className="submit-btn">ยืนยัน</button>
+            <button className="bg-linear-to-br from-[#667eea] to-[#764ba2] text-white px-8 py-4 rounded-xl font-bold hover:-translate-y-0.5 transition-all">Login</button>
           </form>
-
-          {error && <div className="error-msg">{error}</div>}
+          {error && <div className="bg-[#ffebee] text-[#c62828] p-4 rounded-xl border-l-5 border-[#f44336] font-bold animate-shake">{error}</div>}
         </div>
       )}
 
-      {/* Stage 3: Authorization */}
+      {/* Stage 3: Authorization (The Cookie Hack) */}
       {stage === 'stage3' && (
-        <div className="screen stage-screen">
-          <div className="stage-header">
-            <span className="stage-badge">ด่านที่ 3</span>
-            <h2>👤 Authorization</h2>
+        <div className="bg-white rounded-[20px] p-10 max-w-[700px] w-full shadow-2xl animate-in fade-in duration-500">
+          <div className="text-center mb-8">
+            <span className="bg-linear-to-br from-[#fd79a8] to-[#e84393] text-white px-5 py-2 rounded-full text-sm font-bold inline-block mb-2">ด่านที่ 3</span>
+            <h2 className="text-3xl font-bold text-[#2d3436]">👤 Authorization</h2>
           </div>
 
-          <div className="success-box">
-            <p>✅ เข้าสู่ระบบสำเร็จ!</p>
-          </div>
-
-          <div className="dashboard">
-            <div className="dashboard-header">
-              <h3>🚌 SUT Smart Bus Dashboard</h3>
-              <div className="role-badge">
-                Role: <span className={`role ${userRole}`}>{userRole}</span>
-              </div>
-            </div>
-
-            <div className="bus-status">
-              <div className="status-item">
-                <span className="status-label">สถานะเครื่องยนต์:</span>
-                <span className="status-value offline">🔴 ปิด</span>
-              </div>
-              <div className="status-item">
-                <span className="status-label">สายรถ:</span>
-                <span className="status-value">มอ - หอพัก</span>
+          <div className="mt-5">
+            <div className="flex justify-between items-center p-5 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-xl mb-5">
+              <h3 className="text-xl font-bold">🚌 Dashboard</h3>
+              <div className="bg-white/20 px-4 py-2 rounded-full text-sm">
+                Role: <span className={`font-bold uppercase ${userRole === 'driver' ? 'text-[#55efc4]' : 'text-[#ffeaa7]'}`}>{userRole}</span>
               </div>
             </div>
 
             <button
-              className={`start-bus-btn ${userRole === 'driver' ? 'enabled' : 'disabled'}`}
-              onClick={handleStartBus}
+              onClick={() => {
+                if (getCookie('role') === 'driver') setStage('victory');
+                else setError(`🚫 Access Denied! คุณเป็น "${userRole}" ระบบต้องการ "driver"`);
+              }}
+              className={`w-full p-5 text-xl font-bold rounded-xl transition-all mb-5 ${userRole === 'driver' ? 'bg-linear-to-br from-[#00b894] to-[#00cec9] text-white cursor-pointer hover:-translate-y-1 shadow-lg' : 'bg-[#dfe6e9] text-[#b2bec3] cursor-not-allowed'}`}
             >
               🔥 Start Bus Engine
             </button>
 
-            <div className="hint-box">
-              <p>💡 <strong>คำใบ้:</strong> คนขับรถชอบกินคุกกี้ (Cookie)</p>
-              <p className="hint-sub">🔍 ลองกด F12 และไปดูที่ Application → Cookies</p>
+            <div className="bg-[#fff3e0] border-l-5 border-[#ff9800] text-[#e65100] p-5 rounded-xl">
+              <p className="font-bold">🚫 สถานะปัจจุบัน: {userRole}</p>
+              <p className="text-sm opacity-80 mt-2">🔍 แฮกเกอร์ต้องแก้ไข Cookie ด้วยตนเอง (F12 -&gt; Application -&gt; Cookies)</p>
             </div>
-
-            {error && <div className="error-msg">{error}</div>}
+            {error && <div className="bg-[#ffebee] text-[#c62828] p-4 rounded-xl border-l-5 border-[#f44336] font-bold mt-4 animate-shake">{error}</div>}
           </div>
         </div>
       )}
 
-      {/* Victory Screen */}
+      {/* Stage: VICTORY */}
       {stage === 'victory' && (
-        <div className="screen victory-screen">
-          <div className="victory-animation">
-            <div className="bus-icon large">🚌</div>
-            <div className="confetti">🎉</div>
+        <div className="bg-white rounded-[20px] p-10 max-w-[700px] w-full shadow-2xl animate-in fade-in duration-500 text-center">
+          <h1 className="text-4xl font-bold text-[#00b894] mb-5">🎊 MISSION SUCCESS!</h1>
+          <div className="bg-[#2d3436] p-8 rounded-2xl my-5">
+            <p className="text-[#ffeaa7] text-xl font-bold mb-3">🏁 FLAG ค้นพบแล้ว:</p>
+            <code className="block text-[#00ff00] font-mono text-lg bg-[#1e1e1e] p-4 rounded-md select-all drop-shadow-[0_0_8px_#00ff00]">
+              {FLAG}
+            </code>
           </div>
-          <h1 className="victory-title">🎊 ภารกิจสำเร็จ!</h1>
-          <div className="victory-box">
-            <p>✅ คุณได้กู้คืนระบบเดินรถเมล์มอสำเร็จแล้ว!</p>
-            <p>ตอนนี้เพื่อนๆ สามารถไปเรียนทันเวลาแล้ว</p>
-          </div>
-          <div className="flag-box">
-            <p className="flag-label">🏁 FLAG:</p>
-            <code className="flag-code">{FLAG}</code>
-          </div>
-          <div className="stats-box">
-            <h3>สรุปทักษะที่ใช้:</h3>
-            <ul>
-              <li>✅ Cryptography (Base64 Decoding)</li>
-              <li>✅ Authentication (PIN Verification / OSINT)</li>
-              <li>✅ Authorization (Cookie Manipulation)</li>
-            </ul>
-          </div>
-          <button className="restart-btn" onClick={() => {
-            setStage('intro');
-            setUsernameInput('');
-            setPinInput('');
-            setError('');
-            document.cookie = 'role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-          }}>
+          <button
+            className="bg-linear-to-br from-[#667eea] to-[#764ba2] text-white px-10 py-4 rounded-full font-bold text-lg hover:-translate-y-1 transition-all shadow-lg"
+            onClick={resetGame}
+          >
             🔄 เล่นอีกครั้ง
           </button>
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="game-footer">
-        <p>🎓 CTF Challenge by มทส. | Difficulty: ⭐ Beginner</p>
+      <footer className="fixed bottom-3 left-1/2 -translate-x-1/2 bg-black/30 text-white px-5 py-2 rounded-full text-sm backdrop-blur-sm">
+        SUT Cyber Security Workshop 2026
       </footer>
     </div>
   );
