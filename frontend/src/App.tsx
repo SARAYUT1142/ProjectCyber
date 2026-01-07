@@ -11,7 +11,7 @@ const sha256 = async (text: string) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-const CORRECT_USERNAME = 'SUT_Student_2026';
+const CORRECT_USERNAME = 'YUCOM';
 const FLAG = 'FLAG{SUT_Smart_Bus_System_Restored_2026}';
 
 type GameStage = 'intro' | 'stage1' | 'stage2' | 'stage3' | 'victory';
@@ -22,6 +22,9 @@ function App() {
   const [pinInput, setPinInput] = useState('');
   const [error, setError] = useState('');
   const [userRole, setUserRole] = useState('passenger');
+  const [showHint, setShowHint] = useState(false);
+  const [showHint2, setShowHint2] = useState(false);
+  const [showHint3, setShowHint3] = useState(false);
 
   // --- Cookie Helpers ---
   const setCookie = (name: string, value: string, days: number) => {
@@ -44,6 +47,31 @@ function App() {
     setPinInput('');
     setError('');
   };
+
+  // useEffect สำหรับดักจับการเข้าด่าน 2 และจัดการ Timer
+  useEffect(() => {
+    if (stage === 'stage2') {
+      // รีเซ็ตคำใบ้ทั้งหมดเมื่อเข้าด่าน
+      setShowHint(false);
+      setShowHint2(false);
+      setShowHint3(false);
+
+      // คำใบ้ที่ 1: 10 นาที (10 * 60 * 1000)
+      const timer1 = setTimeout(() => setShowHint(true), 600000);  //600000
+
+      // คำใบ้ที่ 2: 20 นาที (20 * 60 * 1000)
+      const timer2 = setTimeout(() => setShowHint2(true), 1200000);  //1200000
+
+      // คำใบ้ที่ 3: 30 นาที (30 * 60 * 1000)
+      const timer3 = setTimeout(() => setShowHint3(true), 1800000);  //1800000
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    }
+  }, [stage]);
 
   useEffect(() => {
     let interval: any;
@@ -71,7 +99,7 @@ function App() {
 
   const handleStage2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const PIN_HASH = await sha256('3600');
+    const PIN_HASH = await sha256('0062');
     const inputHash = await sha256(pinInput);
     if (inputHash === PIN_HASH) {
       setError('');
@@ -111,7 +139,7 @@ function App() {
             <div className='border border-amber-600 text-amber-600 bg-amber-200 rounded-2xl mt-5 h-18 flex justify-center items-center'>
               <h3>นี่คือ Cyphertext ที่ได้ BJPNH โดยให้เอาภาพด้านล่างคือรหัสที่จะเอามาถอดเพื่อหา Plaintext</h3>
             </div>
-            <img src="/image.png" alt="Logo" />
+            <img src="/image_level1.png" alt="Logo" />
           </div>
           <div className="bg-[#2d3436] p-8 rounded-xl my-5 overflow-hidden relative">
             <div className="flex overflow-hidden select-all">
@@ -141,9 +169,47 @@ function App() {
             <span className="bg-linear-to-br from-[#fd79a8] to-[#e84393] text-white px-5 py-2 rounded-full text-sm font-bold inline-block mb-2">ด่านที่ 2</span>
             <h2 className="text-3xl font-bold text-[#2d3436]">🔑 Authentication</h2>
           </div>
-          <div className="bg-[#e3f2fd] border-l-5 border-[#2196f3] text-[#1565c0] p-5 rounded-xl my-5">
-            <p>ใส่รหัส PIN 4 หลัก (เลขท้ายเบอร์โทร รพ. มทส.)</p>
+
+          <div className='flex justify-center items-center flex-col'>
+            <h2 className="font-bold mb-2">คำใบ้เริ่มต้น</h2>
+            <img src="image_leval2.png" alt="Hint" className="rounded-lg shadow-md mb-4" />
           </div>
+
+          <div className="bg-[#e3f2fd] border-l-5 border-[#2196f3] text-[#1565c0] p-5 rounded-xl my-5">
+            <p>ใส่รหัส PIN 4 หลัก </p>
+          </div>
+
+          {/* คำใบ้ที่ 1 (10 นาที) */}
+          {showHint && (
+            <div className="bg-amber-50 border-l-5 border-amber-400 p-4 rounded-xl mb-3 animate-in slide-in-from-top-2 duration-700">
+              <h4 className="font-bold text-amber-800">💡 คำใบ้พิเศษที่ 1 (10 นาที):</h4>
+              <p className="text-amber-700">เป็นลำดับตัวอักษร</p>
+            </div>
+          )}
+
+          {/* คำใบ้ที่ 2 (20 นาที) */}
+          {showHint2 && (
+            <div className="bg-orange-50 border-l-5 border-orange-400 p-4 rounded-xl mb-3 animate-in slide-in-from-top-2 duration-700">
+              <h4 className="font-bold text-orange-800">💡 คำใบ้พิเศษที่ 2 (20 นาที):</h4>
+              <p className="text-orange-700">มีการบวกกัน</p>
+            </div>
+          )}
+
+          {/* คำใบ้ที่ 3 (30 นาที) */}
+          {showHint3 && (
+            <div className="bg-red-50 border-l-5 border-red-400 p-4 rounded-xl mb-3 animate-in slide-in-from-top-2 duration-700">
+              <h4 className="font-bold text-red-800">💡 คำใบ้พิเศษที่ 3 (30 นาที):</h4>
+              <p className="text-red-700">ใช้ตัวอักษรไม่ซ้ำกัน</p>
+            </div>
+          )}
+
+          {/* ข้อความบอกสถานะเวลา (จะหายไปเมื่อคำใบ้มาครบแล้ว) */}
+          {!showHint3 && (
+            <p className="text-gray-400 text-xs text-center italic mb-5">
+              {!showHint ? "คำใบ้ถัดไปจะมาใน 10 นาที..." : !showHint2 ? "คำใบ้ที่ 2 จะมาในอีก 10 นาที..." : "คำใบ้สุดท้ายจะมาในอีก 10 นาที..."}
+            </p>
+          )}
+
           <form onSubmit={handleStage2Submit} className="flex flex-col md:flex-row gap-3 my-5">
             <input
               type="password"
@@ -155,6 +221,7 @@ function App() {
             />
             <button className="bg-linear-to-br from-[#667eea] to-[#764ba2] text-white px-8 py-4 rounded-xl font-bold hover:-translate-y-0.5 transition-all">Login</button>
           </form>
+
           {error && <div className="bg-[#ffebee] text-[#c62828] p-4 rounded-xl border-l-5 border-[#f44336] font-bold animate-shake">{error}</div>}
         </div>
       )}
