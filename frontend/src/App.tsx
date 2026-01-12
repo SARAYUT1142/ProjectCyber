@@ -123,6 +123,71 @@ function App() {
     else { setError('❌ PIN ไม่ถูกต้อง! (เบาะแส: 044-223-3xxx)'); }
   };
 
+
+  // ======================= AUTHORIZATION MODELS =======================
+
+  // ---- Access Control Matrix ----
+  const accessControlMatrix: Record<string, Record<string, boolean>> = {
+    passenger: {
+      "bus:start": false,
+    },
+    driver: {
+      "bus:start": true,
+    },
+  };
+
+  // ---- Permission Mapping ----
+  const rolePermissions: Record<string, string[]> = {
+    passenger: ["bus:view"],
+    driver: ["bus:view", "bus:start"],
+  };
+
+  // ---- Multilevel Security (MLS) ----
+  const securityLevels = ["LOW", "MEDIUM", "HIGH"] as const;
+  type SecurityLevel = typeof securityLevels[number];
+
+  // Object security level
+  const busSecurityLevel: SecurityLevel = "MEDIUM";
+
+  // ---- Central Authorization Decision ----
+  function authorize(action: string) {
+    const role = getCookie("role") || "passenger";
+
+    // RBAC
+    if (!accessControlMatrix[role]?.[action]) {
+      return { allowed: false, reason: "RBAC / Access Control Matrix failed" };
+    }
+
+    // Permission-based
+    if (!rolePermissions[role]?.includes(action)) {
+      return { allowed: false, reason: "Permission denied" };
+    }
+
+    // MLS
+    const userClearance: SecurityLevel =
+      role === "driver" ? "HIGH" : "LOW";
+
+    if (
+      securityLevels.indexOf(userClearance) <
+      securityLevels.indexOf(busSecurityLevel)
+    ) {
+      return { allowed: false, reason: "MLS clearance too low" };
+    }
+
+    // ABAC (Subject Attributes)
+    if (!isHuman || !visualRecognition) {
+      return { allowed: false, reason: "Subject attributes not satisfied" };
+    }
+
+    // Rule-based (final policy rule)
+    if (stage !== "stage3") {
+      return { allowed: false, reason: "Invalid system state" };
+    }
+
+    return { allowed: true };
+}
+
+
   return (
     <div className="min-h-screen bg-linear-to-br from-[#667eea] to-[#764ba2] flex flex-col items-center justify-center p-5 relative font-sans">
 
@@ -278,7 +343,24 @@ function App() {
                 <h3 className="text-xl font-bold">🚌 Dashboard</h3>
                 <div className="bg-white/20 px-4 py-2 rounded-full text-sm">Role: <span className={`font-bold uppercase ${userRole === 'driver' ? 'text-[#55efc4]' : 'text-[#ffeaa7]'}`}>{userRole}</span></div>
               </div>
-              <button onClick={() => { if (getCookie('role') === 'driver') setStage('victory'); else setError(`🚫 Access Denied! คุณเป็น "${userRole}" ระบบต้องการ "driver"`); }} className={`w-full p-5 text-xl font-bold rounded-xl transition-all mb-5 ${userRole === 'driver' ? 'bg-linear-to-br from-[#00b894] to-[#00cec9] text-white cursor-pointer hover:-translate-y-1 shadow-lg' : 'bg-[#dfe6e9] text-[#b2bec3] cursor-not-allowed'}`}>🔥 Start Bus Engine</button>
+              <button
+                onClick={() => {
+                  const decision = authorize("bus:start");
+
+                  if (decision.allowed) {
+                    setStage("victory");
+                  } else {
+                    setError(`🚫 Access Denied: ${decision.reason}`);
+                  }
+                }}
+                className={`w-full p-5 text-xl font-bold rounded-xl transition-all mb-5 ${userRole === "driver"
+                    ? "bg-linear-to-br from-[#00b894] to-[#00cec9] text-white"
+                    : "bg-[#dfe6e9] text-[#b2bec3]"
+                  }`}
+              >
+                🔥 Start Bus Engine
+              </button>
+
               <div><p className="text-sm text-gray-500 text-center">Hint: <b>คนขับรถ</b>มีผู้โดยสารชื่อ <b>cookie</b> คนขับรถต้องไปส่งผู้โดยสารที่ <b>F12</b></p></div>
               <div className="bg-[#fff3e0] border-l-5 border-[#ff9800] text-[#e65100] p-5 rounded-xl"><p className="font-bold">🚫 สถานะปัจจุบัน: {userRole}</p></div>
               {error && <div className="bg-[#ffebee] text-[#c62828] p-4 rounded-xl border-l-5 border-[#f44336] font-bold mt-4 animate-shake">{error}</div>}
