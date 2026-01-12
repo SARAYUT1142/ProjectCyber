@@ -144,7 +144,7 @@ function App() {
           <div className="bg-[#2d3436] p-8 rounded-xl my-5 overflow-hidden relative">
             <div className="flex overflow-hidden select-all">
               <span className="text-[#00ff00] font-mono text-2xl font-bold whitespace-nowrap animate-scroll drop-shadow-[0_0_10px_#00ff00]">
-                U1VUX1N0dWRlbnRfMjAyNg==
+                You are gay.
               </span>
             </div>
           </div>
