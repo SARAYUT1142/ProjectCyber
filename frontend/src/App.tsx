@@ -34,6 +34,14 @@ function App() {
   const [showHint2, setShowHint2] = useState(false);
   const [showHint3, setShowHint3] = useState(false);
 
+  // Stage 3: Captcha States
+  const [authStep, setAuthStep] = useState<'verify' | 'role'>('verify');
+  const [verifySuccess, setVerifySuccess] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<number[]>([]);
+  const [isHuman, setIsHuman] = useState(false);
+  const [visualRecognition, setVisualRecognition] = useState(false);
+  const [captchaPassed, setCaptchaPassed] = useState(false);
+
   // -----------------------------------------------------------
   // [NEW] useEffect สำหรับบันทึก Stage ลง localStorage ทุกครั้งที่เปลี่ยนด่าน
   // -----------------------------------------------------------
@@ -61,6 +69,14 @@ function App() {
     setUsernameInput('');
     setPinInput('');
     setError('');
+    
+    // Reset Stage 3 states
+    setAuthStep('verify');
+    setVerifySuccess(false);
+    setSelectedImages([]);
+    setIsHuman(false);
+    setVisualRecognition(false);
+    setCaptchaPassed(false);
   };
 
   // useEffect สำหรับดักจับการเข้าด่าน 1 และจัดการ Timer
@@ -115,6 +131,11 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [stage, userRole]);
+
+  // Clear error when stage or authStep changes
+  useEffect(() => {
+    setError('');
+  }, [stage, authStep]);
 
   const handleStage1Submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,31 +309,133 @@ function App() {
             <h2 className="text-3xl font-bold text-[#2d3436]">👤 Authorization</h2>
           </div>
 
-          <div className="mt-5">
-            <div className="flex justify-between items-center p-5 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-xl mb-5">
-              <h3 className="text-xl font-bold">🚌 Dashboard</h3>
-              <div className="bg-white/20 px-4 py-2 rounded-full text-sm">
-                Role: <span className={`font-bold uppercase ${userRole === 'driver' ? 'text-[#55efc4]' : 'text-[#ffeaa7]'}`}>{userRole}</span>
+          {/* ===================== STEP 1: SUBJECT ATTRIBUTE ===================== */}
+          {authStep === 'verify' && (
+            <>
+              {/* Dashboard */}
+              <div className="flex justify-between items-center p-5 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-xl mb-5">
+                <h3 className="text-xl font-bold">🚌 Dashboard</h3>
+                <div className="bg-white/20 px-4 py-2 rounded-full text-sm">
+                  Role: <span className="font-bold text-[#ffeaa7]">PASSENGER</span>
+                </div>
               </div>
-            </div>
 
-            <button
-              onClick={() => {
-                if (getCookie('role') === 'driver') setStage('victory');
-                else setError(`🚫 Access Denied! คุณเป็น "${userRole}" ระบบต้องการ "driver"`);
-              }}
-              className={`w-full p-5 text-xl font-bold rounded-xl transition-all mb-5 ${userRole === 'driver' ? 'bg-linear-to-br from-[#00b894] to-[#00cec9] text-white cursor-pointer hover:-translate-y-1 shadow-lg' : 'bg-[#dfe6e9] text-[#b2bec3] cursor-not-allowed'}`}
-            >
-              🔥 Start Bus Engine
-            </button>
+              {/* CAPTCHA */}
+              <div
+                className={`p-5 rounded-xl transition-all duration-500
+    ${verifySuccess
+                    ? "bg-green-100 border-2 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.7)]"
+                    : "bg-gray-100"
+                  }
+  `}
+              >
+                <h4 className="font-bold mb-2">🧠 Subject Attribute Verification</h4>
+                <p className="text-sm mb-3">กุ๊งกิ๊ง กุ๊งกิ๊ง กุ๊งกุ๊งกุ๊งกุ๊ง กิ๊งกิ๊งกิ๊งกิ๊ง <b>มีกระดิ่งทั้งหมดกี่ลูก</b></p>
 
-            <div className="bg-[#fff3e0] border-l-5 border-[#ff9800] text-[#e65100] p-5 rounded-xl">
-              <p className="font-bold">🚫 สถานะปัจจุบัน: {userRole}</p>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {[0, 1, 2].map((i) => (
+                    <img
+                      key={i}
+                      src={
+                        i === 0
+                          ? "/4.avif"   // BUS (จงใจหลอก)
+                          : i === 1
+                            ? "/7.jpg"    // NOT BUS
+                            : "/12.avif" // BUS (จงใจหลอก)
+                      }
+                      onClick={() => {
+                        setError(''); // Clear error when user interacts
+                        setSelectedImages(prev =>
+                          prev.includes(i)
+                            ? prev.filter(x => x !== i)
+                            : [...prev, i]
+                        );
+                      }}
+                      className={`cursor-pointer rounded-lg border-4 ${selectedImages.includes(i)
+                          ? "border-green-500"
+                          : "border-transparent"
+                        }`}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex justify-center flex-col items-center gap-4">
+                  <button
+                    className="bg-blue-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-600 transition-colors"
+                    onClick={() => {
+                      const correct =
+                        !selectedImages.includes(0) &&
+                        !selectedImages.includes(2) &&
+                        selectedImages.includes(1);
+
+                      if (correct) {
+                        setIsHuman(true);
+                        setVisualRecognition(true);
+                        setCaptchaPassed(true);
+                        setVerifySuccess(true); // ⭐ trigger effect
+
+                        // หน่วงเวลาเพื่อให้เห็นเอฟเฟกต์
+                        setTimeout(() => {
+                          setAuthStep('role');
+                        }, 1500);
+                      } else {
+                        setError("❌ CAPTCHA Failed! กรุณาเลือกเลขให้ถูกต้อง");
+                      }
+                    }}
+                  >
+                    Verify
+                  </button>
+
+                  {error && (
+                    <div className="w-full bg-red-50 text-red-600 p-3 rounded-lg border border-red-200 text-sm font-bold animate-shake text-center">
+                      {error}
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-xs mt-2 text-gray-600">
+                  isHuman={String(isHuman)} | visualRecognition={String(visualRecognition)}
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* ===================== STEP 2: ROLE CHECK ===================== */}
+          {authStep === 'role' && (
+            <div className="mt-5">
+              <div className="flex justify-between items-center p-5 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-xl mb-5">
+                <h3 className="text-xl font-bold">🚌 Dashboard</h3>
+                <div className="bg-white/20 px-4 py-2 rounded-full text-sm">
+                  Role: <span className={`font-bold uppercase ${userRole === 'driver' ? 'text-[#55efc4]' : 'text-[#ffeaa7]'}`}>{userRole}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (getCookie('role') === 'driver') setStage('victory');
+                  else setError(`🚫 Access Denied! คุณเป็น "${userRole}" ระบบต้องการ "driver"`);
+                }}
+                className={`w-full p-5 text-xl font-bold rounded-xl transition-all mb-5 ${userRole === 'driver' ? 'bg-linear-to-br from-[#00b894] to-[#00cec9] text-white cursor-pointer hover:-translate-y-1 shadow-lg' : 'bg-[#dfe6e9] text-[#b2bec3] cursor-not-allowed'}`}
+              >
+                🔥 Start Bus Engine
+              </button>
+              <div>
+                <p className="text-sm text-gray-500 text-center">
+                  Hint: <b>คนขับรถ</b>มีผู้โดยสารชื่อ <b>cookie</b> คนขับรถต้องไปส่งผู้โดยสารที่ <b>F12</b>
+                </p>
+              </div>
+              
+
+              <div className="bg-[#fff3e0] border-l-5 border-[#ff9800] text-[#e65100] p-5 rounded-xl">
+                <p className="font-bold">🚫 สถานะปัจจุบัน: {userRole}</p>
+              </div>
+              
+              {error && <div className="bg-[#ffebee] text-[#c62828] p-4 rounded-xl border-l-5 border-[#f44336] font-bold mt-4 animate-shake">{error}</div>}
             </div>
-            {error && <div className="bg-[#ffebee] text-[#c62828] p-4 rounded-xl border-l-5 border-[#f44336] font-bold mt-4 animate-shake">{error}</div>}
-          </div>
+          )}
         </div>
       )}
+
 
       {/* Stage: VICTORY */}
       {stage === 'victory' && (
