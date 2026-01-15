@@ -263,7 +263,7 @@ function App() {
           <div className="bg-[#2d3436] p-8 rounded-xl my-5 overflow-hidden relative">
             <div className="flex overflow-hidden select-all">
               <span className="text-[#00ff00] font-mono text-2xl font-bold whitespace-nowrap animate-scroll drop-shadow-[0_0_10px_#00ff00]">
-                You are gay.
+                You are g........
               </span>
             </div>
           </div>
@@ -295,7 +295,7 @@ function App() {
           <div className="bg-[#e3f2fd] border-l-5 border-[#2196f3] text-[#1565c0] p-5 rounded-xl my-5"><p>ใส่รหัส PIN 4 หลัก </p></div>
 
            {/* Hint Section */}
-           {showHint && (<div className="bg-amber-50 border-l-5 border-amber-400 p-4 rounded-xl mb-3 animate-in slide-in-from-top-2 duration-700"><h4 className="font-bold text-amber-800">💡 คำใบ้พิเศษที่ 1 (10 นาที):</h4><p className="text-amber-700">เป็นลำดับตัวอักษร</p></div>)}
+           {showHint && (<div className="bg-amber-50 border-l-5 border-amber-400 p-4 rounded-xl mb-3 animate-in slide-in-from-top-2 duration-700"><h4 className="font-bold text-amber-800">💡 คำใบ้พิเศษที่ 1 (10 นาที):</h4><p className="text-amber-700">เป็นลำดับตัวอักษร A = 1, B = 2 .....</p></div>)}
            {showHint2 && (<div className="bg-orange-50 border-l-5 border-orange-400 p-4 rounded-xl mb-3 animate-in slide-in-from-top-2 duration-700"><h4 className="font-bold text-orange-800">💡 คำใบ้พิเศษที่ 2 (20 นาที):</h4><p className="text-orange-700">มีการบวกกัน</p></div>)}
            {showHint3 && (<div className="bg-red-50 border-l-5 border-red-400 p-4 rounded-xl mb-3 animate-in slide-in-from-top-2 duration-700"><h4 className="font-bold text-red-800">💡 คำใบ้พิเศษที่ 3 (30 นาที):</h4><p className="text-red-700">ใช้ตัวอักษรไม่ซ้ำกัน</p></div>)}
 
