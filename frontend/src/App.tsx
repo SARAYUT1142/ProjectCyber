@@ -191,7 +191,7 @@ function App() {
 
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#667eea] to-[#764ba2] flex flex-col items-center justify-center p-5 relative font-sans">
+    <div className="min-h-screen bg-linear-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] flex flex-col items-center justify-center p-5 relative font-sans">
 
       {/* ================= STAGE: INTRO ================= */}
       {stage === 'intro' && (
@@ -227,7 +227,7 @@ function App() {
               </div>
 
               <p>
-                ทางฝ่าย IT ตรวจพบว่าระบบถูกแฮกโดยกลุ่มผู้ไม่หวังดี แต่โชคดีที่ <span className="text-[#0be881] font-bold">"YU COM"</span> (ตำนานโปรแกรมเมอร์รุ่นบุกเบิกของชมรมคอมพิวเตอร์) ได้ทิ้ง <span className="text-[#ff5e57] font-bold">"Backdoor (ประตูหลัง)"</span> เอาไว้สำหรับกู้คืนระบบในกรณีฉุกเฉิน
+                ทางฝ่าย IT ตรวจพบว่าระบบถูกแฮกโดยกลุ่มผู้ไม่หวังดี แต่โชคดีที่ <span className="text-[#0be881] font-bold">"YU AND COM"</span> (ตำนานโปรแกรมเมอร์รุ่นบุกเบิกของชมรมคอมพิวเตอร์) ได้ทิ้ง <span className="text-[#ff5e57] font-bold">"Backdoor (ประตูหลัง)"</span> เอาไว้สำหรับกู้คืนระบบในกรณีฉุกเฉิน
               </p>
 
               <div className="bg-[#00d8d6]/10 p-6 rounded-lg border border-[#00d8d6] text-center">
@@ -265,7 +265,7 @@ function App() {
           <div className="bg-[#2d3436] p-8 rounded-xl my-5 overflow-hidden relative">
             <div className="flex overflow-hidden select-all">
               <span className="text-[#00ff00] font-mono text-2xl font-bold whitespace-nowrap animate-scroll drop-shadow-[0_0_10px_#00ff00]">
-                You are g........
+                You are ........
               </span>
             </div>
           </div>
