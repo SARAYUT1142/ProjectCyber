@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import { sha256 } from './service/hashfunction';
 
-// Mock function กรณีไม่มีไฟล์ service
-const sha256 = async (text: string) => {
-  const msgUint8 = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-};
+// // Mock function กรณีไม่มีไฟล์ service
+// const sha256 = async (text: string) => {
+//   const msgUint8 = new TextEncoder().encode(text);
+//   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+//   const hashArray = Array.from(new Uint8Array(hashBuffer));
+//   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+// };
 
 const CORRECT_USERNAME = 'YUCOM';
 const FLAG = 'FLAG{SUT_Smart_Bus_System_Restored_2026}';
@@ -232,7 +233,7 @@ function App() {
 
               <div className="bg-[#00d8d6]/10 p-6 rounded-lg border border-[#00d8d6] text-center">
                  <h3 className="text-[#00d8d6] text-xl font-bold mb-2">🚀 ภารกิจของคุณ</h3>
-                 <p>สวมบทบาทเป็นรุ่นน้องชมรมคอมฯ เจาะเข้าระบบผ่าน Backdoor ของ YU COM เพื่อรีบูตเครื่องยนต์รถเมล์ ก่อนที่เวลา 08:00 น. จะมาถึง</p>
+                 <p>สวมบทบาทเป็นรุ่นน้องชมรมคอมฯ เจาะเข้าระบบผ่าน Backdoor ของ YU AND COM เพื่อรีบูตเครื่องยนต์รถเมล์ ก่อนที่เวลา 08:00 น. จะมาถึง</p>
               </div>
            </div>
 
