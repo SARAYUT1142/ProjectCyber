@@ -16,8 +16,9 @@ const FLAG = 'FLAG{SUT_Smart_Bus_System_Restored_2026}';
 type GameStage = 'intro' | 'briefing' | 'stage1' | 'stage2' | 'stage3' | 'victory';
 
 function App() {
+  // [CHANGE 1] อ่านค่าเริ่มต้นจาก sessionStorage แทน localStorage
   const [stage, setStage] = useState<GameStage>(() => {
-    const savedStage = localStorage.getItem('sut_ctf_stage');
+    const savedStage = sessionStorage.getItem('sut_ctf_stage');
     return (savedStage as GameStage) || 'intro';
   });
 
@@ -39,8 +40,9 @@ function App() {
   const [visualRecognition, setVisualRecognition] = useState(false);
   const [captchaPassed, setCaptchaPassed] = useState(false);
 
+  // [CHANGE 2] บันทึกค่าลง sessionStorage แทน localStorage เมื่อ stage เปลี่ยน
   useEffect(() => {
-    localStorage.setItem('sut_ctf_stage', stage);
+    sessionStorage.setItem('sut_ctf_stage', stage);
   }, [stage]);
 
   // --- Cookie Helpers ---
@@ -59,7 +61,7 @@ function App() {
   const resetGame = () => {
     setCookie('role', 'passenger', 1);
     setUserRole('passenger');
-    setStage('intro');
+    setStage('intro'); // การ setStage ตรงนี้จะไป trigger useEffect ให้บันทึก 'intro' ลง sessionStorage เอง
     setUsernameInput('');
     setPinInput('');
     setError('');
@@ -77,9 +79,9 @@ function App() {
   useEffect(() => {
     if (stage === 'stage1') {
       setShowHint(false); setShowHint2(false); setShowHint3(false);
-      const timer1 = setTimeout(() => setShowHint(true),600000); 
-      const timer2 = setTimeout(() => setShowHint2(true), 1200000); 
-      const timer3 = setTimeout(() => setShowHint3(true), 1800000); 
+      const timer1 = setTimeout(() => setShowHint(true),5000);  //600000
+      const timer2 = setTimeout(() => setShowHint2(true), 10000);  //1200000
+      const timer3 = setTimeout(() => setShowHint3(true), 15000);  //1800000
       return () => { clearTimeout(timer1); clearTimeout(timer2); clearTimeout(timer3); };
     }
   }, [stage]);
@@ -87,9 +89,9 @@ function App() {
   useEffect(() => {
     if (stage === 'stage2') {
       setShowHint(false); setShowHint2(false); setShowHint3(false);
-      const timer1 = setTimeout(() => setShowHint(true), 600000); 
-      const timer2 = setTimeout(() => setShowHint2(true), 1200000); 
-      const timer3 = setTimeout(() => setShowHint3(true), 1800000); 
+      const timer1 = setTimeout(() => setShowHint(true), 5000); 
+      const timer2 = setTimeout(() => setShowHint2(true), 10000); 
+      const timer3 = setTimeout(() => setShowHint3(true), 15000); 
       return () => { clearTimeout(timer1); clearTimeout(timer2); clearTimeout(timer3); };
     }
   }, [stage]);
